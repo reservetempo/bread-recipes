@@ -3,7 +3,7 @@
 // cup = grams in one US cup, used when an amount is given in cups.
 export const FOODS = {
   "psyllium husk":     { kcal: 350, protein: 2,    fat: 0.5,  carbs: 85,   fiber: 80,   sugar: 0,   sodium: 50 },
-  "flax seed":         { kcal: 534, protein: 18.3, fat: 42.2, carbs: 28.9, fiber: 27.3, sugar: 1.6, sodium: 30 },
+  "ground flax":         { kcal: 534, protein: 18.3, fat: 42.2, carbs: 28.9, fiber: 27.3, sugar: 1.6, sodium: 30 },
   "hemp hearts":       { kcal: 553, protein: 31.6, fat: 48.8, carbs: 8.7,  fiber: 4,    sugar: 1.5, sodium: 5 },
   "buckwheat flour":   { kcal: 335, protein: 12.6, fat: 3.1,  carbs: 70.6, fiber: 10,   sugar: 2.6, sodium: 11 },
   "sorghum flour":     { kcal: 359, protein: 8.4,  fat: 3.3,  carbs: 76.6, fiber: 6.6,  sugar: 1.9, sodium: 3 },
@@ -35,7 +35,7 @@ export const BATCHES = [
     slicesPerLoaf: 14,
     ingredients: [
       { grams: 110, food: "psyllium husk" },
-      { grams: 210, food: "flax seed" },
+      { grams: 210, food: "ground flax" },
       { grams: 60, food: "hemp hearts" },
       { grams: 1730, label: "flour", oneOf: ["buckwheat flour", "sorghum flour", "brown rice flour"] },
       { grams: 2600, food: "water" },
@@ -47,11 +47,11 @@ export const BATCHES = [
     ],
     healthy:
       "A very good everyday bread: about 2½× the fibre of white bread, no refined wheat, " +
-      "and most of the fat is unsaturated, with a good dose of omega-3 from the flax, hemp and walnuts. " +
+      "and most of the fat is unsaturated, with a good dose of omega-3 from the ground flax (grinding is what makes it absorbable), hemp and walnuts. " +
       "Added sugar is under 2 g per 100 g and sodium is below most store loaves.",
     improve:
       "Protein is only moderate, so lean the flour toward buckwheat (and the seeds toward pumpkin/hemp) rather than brown rice. " +
-      "Grind or soak the flax, since whole flax seeds mostly pass straight through. " +
+      "Doubling the hemp hearts would add protein and omega-3 with very little extra carb. " +
       "The brown sugar could be halved; the sourdough and yeast don't need 80 g.",
   },
 ];
