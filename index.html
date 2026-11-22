@@ -47,10 +47,10 @@
   <p class="sub">My weekly gluten-free seeded loaves, with the macros for each batch.</p>
   <div id="batches"></div>
   <p class="foot">Nutrition from USDA FoodData Central. Where the flours or seeds change week to week, the numbers are the average of the options.
-    Baked weight assumes <span id="loss"></span>% water lost in the oven; a slice is <span id="slice"></span> g.</p>
+    Baked weight assumes <span id="loss"></span>% water lost in the oven.</p>
 </main>
 <script type="module">
-import { FOODS, BATCHES, BAKE_LOSS, SLICE_G } from "./recipes.js";
+import { FOODS, BATCHES, BAKE_LOSS } from "./recipes.js";
 const KEYS = ["kcal", "protein", "fat", "carbs", "fiber", "sugar", "sodium"];
 const zero = () => Object.fromEntries(KEYS.map(k => [k, 0]));
 
@@ -69,7 +69,6 @@ function line(ing) {
 
 const fmt = (x, d = 0) => x.toLocaleString("en", { maximumFractionDigits: d, minimumFractionDigits: d });
 document.getElementById("loss").textContent = BAKE_LOSS * 100;
-document.getElementById("slice").textContent = SLICE_G;
 
 document.getElementById("batches").innerHTML = BATCHES.map(b => {
   const total = zero(); let dough = 0;
@@ -82,7 +81,8 @@ document.getElementById("batches").innerHTML = BATCHES.map(b => {
   }).join("");
   const baked = dough * (1 - BAKE_LOSS);
   const per = g => Object.fromEntries(KEYS.map(k => [k, total[k] * g / baked]));
-  const p100 = per(100), slice = per(SLICE_G);
+  const slices = b.loaves * b.slicesPerLoaf, sliceG = baked / slices;
+  const p100 = per(100), slice = per(sliceG), loaf = per(baked / b.loaves);
   const e = { protein: total.protein * 4, fat: total.fat * 9, carbs: (total.carbs - total.fiber) * 4 };
   const eSum = e.protein + e.fat + e.carbs;
   const tile = (label, val, unit, color, d = 1) =>
@@ -90,7 +90,7 @@ document.getElementById("batches").innerHTML = BATCHES.map(b => {
   return `<article>
     <div class="date">${new Date(b.date + "T12:00").toDateString()}</div>
     <h2>${b.title}</h2>
-    <div class="foot">${b.note || ""} Dough ≈ ${fmt(dough / 1000, 1)} kg → ≈ ${fmt(baked / 1000, 1)} kg baked, about ${fmt(baked / SLICE_G)} slices.</div>
+    <div class="foot">${b.note || ""} Dough ≈ ${fmt(dough / 1000, 1)} kg → ≈ ${fmt(baked / 1000, 1)} kg baked: ${b.loaves} loaves of ~${fmt(baked / b.loaves)} g, ${b.slicesPerLoaf} slices each (~${fmt(sliceG)} g a slice).</div>
 
     <h3>Per 100 g of bread</h3>
     <div class="tiles">
@@ -108,8 +108,11 @@ document.getElementById("batches").innerHTML = BATCHES.map(b => {
     </div>
     <div class="legend">Calories from protein ${fmt(100 * e.protein / eSum)}% · fat ${fmt(100 * e.fat / eSum)}% · net carbs ${fmt(100 * e.carbs / eSum)}%</div>
 
-    <h3>Per ${SLICE_G} g slice</h3>
-    <div class="legend" style="font-size:14px;color:var(--ink)">${fmt(slice.kcal)} kcal · ${fmt(slice.protein, 1)} g protein · ${fmt(slice.fat, 1)} g fat · ${fmt(slice.carbs, 1)} g carbs · ${fmt(slice.fiber, 1)} g fibre · ${fmt(slice.sugar, 1)} g sugar</div>
+    <h3>Per slice (~${fmt(sliceG)} g)</h3>
+    <div class="legend" style="font-size:14px;color:var(--ink)">${fmt(slice.kcal)} kcal · ${fmt(slice.protein, 1)} g protein · ${fmt(slice.fat, 1)} g fat · ${fmt(slice.carbs, 1)} g carbs · ${fmt(slice.fiber, 1)} g fibre · ${fmt(slice.sugar, 1)} g sugar · ${fmt(slice.sodium)} mg sodium</div>
+
+    <h3>Per loaf (~${fmt(baked / b.loaves)} g)</h3>
+    <div class="legend" style="font-size:14px;color:var(--ink)">${fmt(loaf.kcal)} kcal · ${fmt(loaf.protein)} g protein · ${fmt(loaf.fat)} g fat · ${fmt(loaf.carbs)} g carbs · ${fmt(loaf.fiber)} g fibre</div>
 
     <h3>How healthy it is</h3>
     <p class="verdict">${b.healthy}</p>

@@ -22,7 +22,6 @@ export const FOODS = {
 
 // Weight lost in the oven, used to estimate the baked weight.
 export const BAKE_LOSS = 0.12;
-export const SLICE_G = 60;
 
 // One entry per batch, newest first.
 // An ingredient with `oneOf` is a choice that changes week to week:
@@ -32,6 +31,8 @@ export const BATCHES = [
     date: "2026-11-22",
     title: "Seeded gluten-free sourdough",
     note: "200 g of the flour comes from the sourdough starter.",
+    loaves: 4,
+    slicesPerLoaf: 14,
     ingredients: [
       { grams: 110, food: "psyllium husk" },
       { grams: 210, food: "flax seed" },
