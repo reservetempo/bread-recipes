@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bread Log</title>
+<style>
+  :root {
+    --bg: #f6f1e7; --card: #fffdf8; --ink: #2b2118; --muted: #7a6a58; --line: #e4d9c6;
+    --protein: #b5523b; --fat: #d9a441; --carbs: #6f8f5a; --fiber: #4f6f8f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1d1915; --card: #26211c; --ink: #f1e9dc; --muted: #a8977f; --line: #3a322a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 Georgia, "Iowan Old Style", serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 80px; }
+  h1 { font-size: 2.2rem; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 32px; }
+  article { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 24px; margin-bottom: 28px; }
+  .date { color: var(--muted); font: 13px/1 ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: .06em; }
+  h2 { margin: 6px 0 4px; font-size: 1.5rem; }
+  h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    font-family: system-ui, sans-serif; margin: 24px 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-family: system-ui, sans-serif; font-size: 14px; }
+  td, th { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .opts { color: var(--muted); font-size: 12.5px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+  .tile { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-family: system-ui, sans-serif; }
+  .tile b { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+  .tile span { font-size: 12px; color: var(--muted); }
+  .tile i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+  .bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; margin: 14px 0 6px; }
+  .legend { font: 12px system-ui, sans-serif; color: var(--muted); }
+  .scroll { overflow-x: auto; }
+  p.verdict { margin: 6px 0; }
+  .foot { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bread log</h1>
+  <p class="sub">My weekly gluten-free seeded loaves, with the macros for each batch.</p>
+  <div id="batches"></div>
+  <p class="foot">Nutrition from USDA FoodData Central. Where the flours or seeds change week to week, the numbers are the average of the options.
+    Baked weight assumes <span id="loss"></span>% water lost in the oven; a slice is <span id="slice"></span> g.</p>
+</main>
+<script type="module">
+import { FOODS, BATCHES, BAKE_LOSS, SLICE_G } from "./recipes.js";
+const KEYS = ["kcal", "protein", "fat", "carbs", "fiber", "sugar", "sodium"];
+const zero = () => Object.fromEntries(KEYS.map(k => [k, 0]));
+
+// Nutrition and grams for one ingredient line (averaged over options).
+function line(ing) {
+  const foods = ing.oneOf || [ing.food];
+  const out = zero(); let grams = 0;
+  for (const f of foods) {
+    const d = FOODS[f];
+    const g = ing.grams ?? ing.cups * d.cup;
+    grams += g / foods.length;
+    for (const k of KEYS) out[k] += d[k] * g / 100 / foods.length;
+  }
+  return { grams, n: out };
+}
+
+const fmt = (x, d = 0) => x.toLocaleString("en", { maximumFractionDigits: d, minimumFractionDigits: d });
+document.getElementById("loss").textContent = BAKE_LOSS * 100;
+document.getElementById("slice").textContent = SLICE_G;
+
+document.getElementById("batches").innerHTML = BATCHES.map(b => {
+  const total = zero(); let dough = 0;
+  const rows = b.ingredients.map(ing => {
+    const { grams, n } = line(ing);
+    dough += grams; KEYS.forEach(k => total[k] += n[k]);
+    const amount = ing.shown || (ing.cups ? `${ing.cups} cups (~${fmt(grams)} g)` : `${fmt(grams)} g`);
+    const name = ing.oneOf ? `${ing.label}<div class="opts">avg of ${ing.oneOf.join(", ")}</div>` : ing.food;
+    return `<tr><td class="n">${amount}</td><td>${name}</td><td class="n">${fmt(n.kcal)}</td><td class="n">${fmt(n.protein)}</td><td class="n">${fmt(n.fat)}</td><td class="n">${fmt(n.carbs)}</td><td class="n">${fmt(n.fiber)}</td></tr>`;
+  }).join("");
+  const baked = dough * (1 - BAKE_LOSS);
+  const per = g => Object.fromEntries(KEYS.map(k => [k, total[k] * g / baked]));
+  const p100 = per(100), slice = per(SLICE_G);
+  const e = { protein: total.protein * 4, fat: total.fat * 9, carbs: (total.carbs - total.fiber) * 4 };
+  const eSum = e.protein + e.fat + e.carbs;
+  const tile = (label, val, unit, color, d = 1) =>
+    `<div class="tile"><span>${color ? `<i style="background:var(--${color})"></i>` : ""}${label}</span><b>${fmt(val, d)}<small> ${unit}</small></b></div>`;
+  return `<article>
+    <div class="date">${new Date(b.date + "T12:00").toDateString()}</div>
+    <h2>${b.title}</h2>
+    <div class="foot">${b.note || ""} Dough ≈ ${fmt(dough / 1000, 1)} kg → ≈ ${fmt(baked / 1000, 1)} kg baked, about ${fmt(baked / SLICE_G)} slices.</div>
+
+    <h3>Per 100 g of bread</h3>
+    <div class="tiles">
+      ${tile("Calories", p100.kcal, "kcal", null, 0)}
+      ${tile("Protein", p100.protein, "g", "protein")}
+      ${tile("Fat", p100.fat, "g", "fat")}
+      ${tile("Carbs", p100.carbs, "g", "carbs")}
+      ${tile("Fibre", p100.fiber, "g", "fiber")}
+      ${tile("Sodium", p100.sodium, "mg", null, 0)}
+    </div>
+    <div class="bar">
+      <div style="flex:${e.protein};background:var(--protein)"></div>
+      <div style="flex:${e.fat};background:var(--fat)"></div>
+      <div style="flex:${e.carbs};background:var(--carbs)"></div>
+    </div>
+    <div class="legend">Calories from protein ${fmt(100 * e.protein / eSum)}% · fat ${fmt(100 * e.fat / eSum)}% · net carbs ${fmt(100 * e.carbs / eSum)}%</div>
+
+    <h3>Per ${SLICE_G} g slice</h3>
+    <div class="legend" style="font-size:14px;color:var(--ink)">${fmt(slice.kcal)} kcal · ${fmt(slice.protein, 1)} g protein · ${fmt(slice.fat, 1)} g fat · ${fmt(slice.carbs, 1)} g carbs · ${fmt(slice.fiber, 1)} g fibre · ${fmt(slice.sugar, 1)} g sugar</div>
+
+    <h3>How healthy it is</h3>
+    <p class="verdict">${b.healthy}</p>
+    <h3>What could be better</h3>
+    <p class="verdict">${b.improve}</p>
+
+    <h3>Recipe &amp; whole-batch macros</h3>
+    <div class="scroll"><table>
+      <tr><th class="n">Amount</th><th>Ingredient</th><th class="n">kcal</th><th class="n">P g</th><th class="n">F g</th><th class="n">C g</th><th class="n">Fib g</th></tr>
+      ${rows}
+      <tr><th></th><th>Whole batch</th><th class="n">${fmt(total.kcal)}</th><th class="n">${fmt(total.protein)}</th><th class="n">${fmt(total.fat)}</th><th class="n">${fmt(total.carbs)}</th><th class="n">${fmt(total.fiber)}</th></tr>
+    </table></div>
+  </article>`;
+}).join("");
+</script>
+</body>
+</html>
